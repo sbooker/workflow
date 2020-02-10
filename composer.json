@@ -1,0 +1,31 @@
+{
+  "name": "sbooker/workflow",
+  "description": "Simple workflow for FSM implementation",
+  "keywords": ["FSM", "state machine", "workflow"],
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Sergey Knigin",
+      "email": "sergey.knigin.dev@gmail.com"
+    }
+  ],
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "require": {
+    "php": "^7.4",
+    "litgroup/enumerable": "^0.7.0",
+    "php-ds/php-ds": "^1.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "Sbooker\\Workflow\\": "src/"
+    }
+  },
+  "config": {
+    "preferred-install": {
+      "*": "dist"
+    },
+    "sort-packages": true
+  }
+}
