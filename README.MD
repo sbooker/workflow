@@ -80,7 +80,7 @@ class ConcreteEntity {
 See [LICENSE][license] file.
 
 [badge-release]: https://img.shields.io/packagist/v/sbooker/workflow.svg?style=flat-square
-[badge-license]: https://img.shields.io/packagist/l/sbooker/workflow.svg?style=flat-square
+[badge-license]: https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square
 [badge-php]: https://img.shields.io/packagist/php-v/sbooker/workflow.svg?style=flat-square
 [badge-downloads]: https://img.shields.io/packagist/dt/sbooker/workflow.svg?style=flat-square
 
