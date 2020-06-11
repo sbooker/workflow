@@ -9,14 +9,16 @@ use Ds\Set;
 
 abstract class Workflow
 {
-    protected Status $status;
+    /** @var Status  */
+    protected $status;
 
-    protected \DateTimeImmutable $changedAt;
+    /** @var \DateTimeImmutable  */
+    protected $changedAt;
 
     /**
      * @var Map<Status, Set<Status>>
      */
-    private ?Map $transitionMap = null;
+    private $transitionMap = null;
 
     public function __construct(Status $initialStatus)
     {
