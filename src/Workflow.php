@@ -7,6 +7,9 @@ namespace Sbooker\Workflow;
 use Ds\Map;
 use Ds\Set;
 
+/**
+ * @template T of Status
+ */
 abstract class Workflow
 {
     protected Status $status;
@@ -14,7 +17,7 @@ abstract class Workflow
     protected \DateTimeImmutable $changedAt;
 
     /**
-     * @var Map<Status, Set<Status>>
+     * @var Map<T, Set<T>>
      */
     private ?Map $transitionMap = null;
 
@@ -23,8 +26,14 @@ abstract class Workflow
         $this->setStatus($initialStatus);
     }
 
+    /**
+     * @return Map<T, Set<T>>
+     */
     abstract protected function buildTransitionMap(): Map;
 
+    /**
+     * @return class-string<T>
+     */
     abstract protected function getStatusClass(): string;
 
     final public function getChangedAt(): \DateTimeImmutable
@@ -32,6 +41,9 @@ abstract class Workflow
         return $this->changedAt;
     }
 
+    /**
+     * @return T
+     */
     final public function getStatus(): Status
     {
         return $this->status;
@@ -49,7 +61,7 @@ abstract class Workflow
     {
         $statusType = $this->getStatusClass();
         if (!($status instanceof $statusType)) {
-            throw new \RuntimeException("Invalid status type '{$status}' for " . get_class($this));
+            throw new \RuntimeException("Invalid status type '{$status->getRawValue()}' for " . get_class($this));
         }
 
         if (!$this->canTransitTo($status)) {
@@ -72,7 +84,6 @@ abstract class Workflow
     public function canTransitTo(Status $status): bool
     {
         try {
-            /** @var Set<Status> $transitionStatusSet */
             $transitionStatusSet = $this->getTransitionMap()->get($this->getStatus());
             return $transitionStatusSet->contains($status);
         } catch (\OutOfBoundsException $e) {
@@ -80,6 +91,9 @@ abstract class Workflow
         }
     }
 
+    /**
+     * @return Map<T, Set<T>>
+     */
     private function getTransitionMap(): Map
     {
         if (!$this->transitionMap) {

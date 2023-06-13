@@ -16,17 +16,12 @@ composer require sbooker/workflow
 
 use Sbooker\Workflow\Status;
 
-final class ConcreteStatus extends Status
+enum ConcreteStatus: string implements Status
 {
-    // define enum, see litgroup/enumerable
-    public static function first(): self { 
-    // ... 
-    }
-
-    public static function second(): self { 
-    // ... 
-    }
-
+    use \Sbooker\Workflow\EnumTrait;
+    
+    case first = "first";
+    case second = "second";
 }
 
 // Step 2. Define workflow
@@ -39,14 +34,14 @@ final class ConcreteWorkflow extends Workflow
 {
     public function __construct()
     {
-        parent::__construct(ConcreteStatus::first());
+        parent::__construct(ConcreteStatus::first);
     }
 
 
     protected function buildTransitionMap(): Map
     {
         $map = new Map();
-        $map->put(ConcreteStatus::first(), new Set([ConcreteStatus::second()]));
+        $map->put(ConcreteStatus::first, new Set([ConcreteStatus::second]));
         return $map;
     }
 
