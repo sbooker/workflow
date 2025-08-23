@@ -23,7 +23,7 @@ The transition logic is encapsulated within the object itself, making its behavi
 
 *   **Explicit Transition Definitions:** The transition map (`TransitionMap`) is the single source of truth for the object's lifecycle.
 *   **Encapsulated Logic:** The object itself is responsible for changing its states.
-*   **Robust Status Objects:** Built on [litgroup/enumerable](https://github.com/litgroup/php-enumerable), allowing for the creation of type-safe statuses that are easy to persist to a database.
+*   **Robust Status Objects:** Built on [litgroup/enumerable](https://github.com/LitGroup/enumerable.php), allowing for the creation of type-safe statuses that are easy to persist to a database.
 *   **Efficient Data Structures:** Uses `Ds\Map` and `Ds\Set` for a convenient and type-safe way to define the transition map (status object -> set of status objects). It works out of the box with the PHP implementation (polyfill), but the `ds` C-extension is recommended for maximum performance.
 *   **Invalid State Protection:** An attempt to perform an invalid transition will result in a controlled `FlowError`.
 
