@@ -1,79 +1,165 @@
-# Simple FSM state and transition map
+[Read in English](README.EN.MD)
+
+# Workflow (`sbooker/workflow`)
 
 [![Latest Version][badge-release]][release]
 [![Software License][badge-license]][license]
 [![PHP Version][badge-php]][php]
 [![Total Downloads][badge-downloads]][downloads]
 
-## Installation
+Простая, но строгая реализация паттерна "Конечный автомат" (State Machine) для доменных объектов и не только.
+
+## Назначение библиотеки
+
+Во многих приложениях состояние объекта (статус заказа, заявки, документа) — это просто поле в базе данных. Логика, разрешающая или запрещающая смену статуса, часто разбросана по разным частям кода, что приводит к ошибкам и усложняет поддержку.
+
+Эта библиотека решает проблему, **формализуя управление жизненным циклом объекта**. Она заставляет вас явно определить:
+1.  Все возможные **состояния** (статусы), в которых может находиться объект.
+2.  Все разрешенные **переходы** между этими состояниями.
+
+Логика переходов инкапсулируется внутри самого объекта, что делает его поведение предсказуемым и надежным.
+
+## Ключевые особенности
+
+*   **Явное определение переходов:** Карта переходов (`TransitionMap`) — единственный источник правды о жизненном цикле объекта.
+*   **Инкапсуляция логики:** Объект сам отвечает за смену своих состояний.
+*   **Надежные статусы-объекты:** Построена на [litgroup/enumerable](https://github.com/litgroup/php-enumerable), что позволяет создавать типобезопасные и легко сохраняемые в БД статусы.
+*   **Эффективные структуры данных:** Использует `Ds\Map` и `Ds\Set` для удобного и типобезопасного определения карты переходов (объект статуса -> набор объектов статусов). Работает 'из коробки' с PHP-реализацией (polyfill), но для максимальной производительности рекомендуется C-расширение `ds`.
+*   **Защита от невалидных состояний:** Попытка выполнить недопустимый переход приведет к контролируемой ошибке `FlowError`.
+
+## Установка
+
+```bash
+composer require sbooker/workflow
+composer require litgroup/enumerable
+composer require php-ds/php-ds
+```
+Библиотека зависит от пакета `php-ds/php-ds`, который предоставляет структуры данных `Map` и `Set`. По умолчанию используется PHP-реализация (polyfill), которой достаточно для большинства сценариев.
+
+**Для максимальной производительности (опционально)** вы можете дополнительно установить C-расширение:
 ```bash
 pecl install ds
-composer require sbooker/workflow
 ```
-## Usage
+
+## Быстрый старт
+
+Рассмотрим пример управления жизненным циклом Заказа (`Order`).
+
+### Шаг 1: Определите Статусы
+
+Создайте класс статуса, унаследовав его от `Sbooker\Workflow\Status`.
+
 ```php
-// Step 1. Create Status Enum
+// src/Orders/Domain/Status.php
+namespace App\Orders\Domain;
 
-use Sbooker\Workflow\Status;
+use Sbooker\Workflow\Status as BaseStatus;
 
-final class ConcreteStatus extends Status
+final class Status extends BaseStatus
 {
-    // define enum, see litgroup/enumerable
-    public static function first(): self { 
-    // ... 
+    private const NEW = 'new';
+    private const PAID = 'paid';
+    private const SENT = 'sent';
+    
+    public static function new(): self
+    {
+        return new self(self::NEW);
     }
-
-    public static function second(): self { 
-    // ... 
+    
+    public static function paid(): self
+    {
+        return new self(self::PAID);
     }
-
+    
+    public static function sent(): self
+    {
+        return new self(self::SENT);
+    }
 }
+```
 
-// Step 2. Define workflow
+### Шаг 2: Создайте класс Workflow
+
+Унаследуйте свой класс от `Sbooker\Workflow\Workflow` и реализуйте два абстрактных метода.
+
+```php
+// src/Orders/Domain/OrderWorkflow.php
+namespace App\Orders\Domain;
 
 use Sbooker\Workflow\Workflow;
 use Ds\Map;
 use Ds\Set;
 
-final class ConcreteWorkflow extends Workflow
+final class OrderWorkflow extends Workflow
 {
     public function __construct()
     {
-        parent::__construct(ConcreteStatus::first());
-    }
-
-
-    protected function buildTransitionMap(): Map
-    {
-        $map = new Map();
-        $map->put(ConcreteStatus::first(), new Set([ConcreteStatus::second()]));
-        return $map;
+        // Начальный статус - неотъемлемая часть определения этого жизненного цикла.
+        parent::__construct(Status::new());
     }
 
     protected function getStatusClass(): string
     {
-        return ConcreteStatus::class;
-    }    
+        return Status::class;
+    }
+
+    protected function buildTransitionMap(): Map
+    {
+        return new Map([
+            Status::new() => new Set([ Status::paid() ]),
+            Status::paid() => new Set([ Status::sent() ]),
+        ]);
+    }
 }
+```
 
-// Step 3. Use workflow in your entity for state control
-class ConcreteEntity {
-    // ...
-    private ConcreteWorkflow $workflow;
-    // ...
+### Шаг 3: Интегрируйте Workflow в ваш Агрегат
 
-    public function __construct() {
-        // ...
-        $this->workflow = new ConcreteWorkflow();
-        // ...
+Ваш доменный объект просто создает экземпляр Workflow, не зная ничего о его начальном состоянии и правилах его изменения.
+
+```php
+// src/Orders/Domain/Order.php
+namespace App\Orders\Domain;
+
+final class Order
+{
+    private OrderWorkflow $workflow;
+
+    public function __construct()
+    {
+        $this->workflow = new OrderWorkflow();
     }
-    
-    public function doSecond(): void {
-        // ...
-        $this->workflow->transitTo(ConcreteStatus::second());
-        // ...
+
+    public function pay(): void
+    {
+        $this->workflow->transitTo(Status::paid());
     }
-} 
+
+    public function getStatus(): Status
+    {
+        return $this->workflow->getStatus();
+    }
+}
+```
+
+### Шаг 4: Используйте в прикладном коде
+
+```php
+// src/UseCase/PayOrder/Handler.php
+use Sbooker\Workflow\FlowError;
+
+$order = $orderRepository->get($orderId); // Заказ в статусе 'NEW'
+
+try {
+    $order->pay(); // Успешно! Статус изменится на 'PAID'
+
+    // Эта строка вызовет исключение FlowError
+    $order->pay();
+
+} catch (FlowError $e) {
+    // Обрабатываем ошибку бизнес-логики
+    $this->logger->error("Invalid status transition: " . $e->getMessage());
+}
 ```
 
 ## License
