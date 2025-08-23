@@ -105,10 +105,13 @@ final class OrderWorkflow extends Workflow
 
     protected function buildTransitionMap(): Map
     {
-        return new Map([
-            Status::new() => new Set([ Status::paid() ]),
-            Status::paid() => new Set([ Status::sent() ]),
-        ]);
+        $map = new Map();
+
+        // Используем put() для добавления переходов с объектами в качестве ключей
+        $map->put(Status::new(), new Set([ Status::paid() ]));
+        $map->put(Status::paid(), new Set([ Status::sent() ]));
+
+        return $map;
     }
 }
 ```
